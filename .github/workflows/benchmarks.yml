@@ -9,7 +9,7 @@ on:
     paths-ignore:
       - '.gitignore'
       - 'readme.txt'
-      - 'readme.md'
+      - 'README.md'
 
 jobs:
   benchmark:

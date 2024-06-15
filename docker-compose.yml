@@ -1,0 +1,141 @@
+services:
+  redis:
+    image: redis:${REDIS_VERSION}
+    container_name: redis
+    ports:
+      - "6377:6379"
+    ulimits:
+      memlock: -1
+    command:
+      - "--io-threads ${THREADS}"
+      - "--io-threads-do-reads yes"
+
+  keydb:
+    image: eqalpha/keydb:${KEYDB_VERSION}
+    container_name: keydb
+    ports:
+      - "6378:6379"
+    ulimits:
+      memlock: -1
+    command:
+      - "--io-threads ${THREADS}"
+      - "--io-threads-do-reads yes"
+
+  valkey:
+    image: valkey/valkey:${VALKEY_VERSION}
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    ulimits:
+      memlock: -1
+    command:
+      - "--io-threads ${THREADS}"
+      - "--io-threads-do-reads yes"
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:${DRAGONFLY_VERSION}
+    container_name: dragonfly
+    ports:
+      - "6380:6379"
+    ulimits:
+      memlock: -1
+    command:
+      - "--proactor_threads=${THREADS}"
+
+  redis-tls:
+    image: redis:${REDIS_VERSION}
+    container_name: redis-tls
+    ports:
+      - "6390:6379"
+    ulimits:
+      memlock: -1
+    command:
+    # --io-threads ? I/O threading is currently not supported with TLS.
+    # https://redis.io/docs/latest/operate/oss_and_stack/management/security/encryption/
+    - "--io-threads ${THREADS}"
+    - "--io-threads-do-reads yes"
+    - "--tls-port 6379"
+    - "--port 0"
+    - "--tls-cert-file /tls/server.crt"
+    - "--tls-key-file /tls/server.key"
+    - "--tls-ca-cert-file /tls/ca.crt"
+    volumes:
+      - ./tls:/tls:ro
+
+  keydb-tls:
+    image: eqalpha/keydb:${KEYDB_VERSION}
+    container_name: keydb-tls
+    ports:
+      - "6391:6391"
+    ulimits:
+      memlock: -1
+    command:
+      # https://docs.keydb.dev/docs/encryption/
+      # "Note that unlike Redis, KeyDB fully supports multithreading of TLS connections."
+      - "--io-threads ${THREADS}"
+      - "--io-threads-do-reads yes"
+      - "--tls-port 6379"
+      - "--port 0"
+      - "--tls-cert-file /tls/server.crt"
+      - "--tls-key-file /tls/server.key"
+      - "--tls-ca-cert-file /tls/ca.crt"
+    volumes:
+      - ./tls:/tls
+
+  valkey-tls:
+    image: valkey/valkey:${REDIS_VERSION}
+    container_name: valkey-tls
+    ports:
+      - "6392:6379"
+    ulimits:
+      memlock: -1
+    command:
+      # --io-threads ? I/O threading is currently not supported with TLS.
+      # https://redis.io/docs/latest/operate/oss_and_stack/management/security/encryption/
+      - "--io-threads ${THREADS}"
+      - "--io-threads-do-reads yes"
+      - "--tls-port 6379"
+      - "--port 0"
+      - "--tls-cert-file /tls/server.crt"
+      - "--tls-key-file /tls/server.key"
+      - "--tls-ca-cert-file /tls/ca.crt"
+    volumes:
+      - ./tls:/tls:ro
+
+  dragonfly-tls:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:${DRAGONFLY_VERSION}
+    container_name: dragonfly-tls
+    ports:
+      - "6393:6379"
+    ulimits:
+      memlock: -1
+    volumes:
+      - ./tls:/tls
+    command:
+    - "--proactor_threads=${THREADS}"
+    - "--tls"
+    - "--tls_key_file=/tls/server.key"
+    - "--tls_cert_file=/tls/server.crt"
+    - "--tls_ca_cert_file=/tls/ca.crt"
+
+  memtier:
+    image: redislabs/memtier_benchmark:${MEMTIER_BENCHMARK_VERSION}
+    container_name: memtier
+    tty: true
+    volumes:
+      - ./tls:/tls
+    entrypoint:
+      - "sleep"
+    command:
+      - "infinity"
+
+  redis-cli:
+    image: redis:${REDIS_VERSION}
+    container_name: redis-cli
+    tty: true
+    volumes:
+      - ./tls:/tls
+    entrypoint:
+      - "sleep"
+    command:
+      - "infinity"
